@@ -3,7 +3,6 @@
  *
  * See init() function
 */
-
 // PRNG: get random 31-bit value if s is null. if s not null, set seed
 int myrand(int s)
 {
@@ -31,7 +30,7 @@ int get_random_opc(int ps[5])
 //   e.g. 5-1-1-1-1 means opcode 1 with 5x higher probability than others
 // * with same seed and probabilities, same sequence is generated
 // * <rA> and <rL> point to int values which should be used at start values
-//   for registers A and L when running the opcode sequence. With same
+//   for registers a and L when running the opcode sequence. With same
 //   seed, they are guaranteed to be set to the same values.
 void init(char* buf, int size, int prob[5], int seed, int* rA, int* rL)
 {
