@@ -3,7 +3,7 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <time.h>
 #include "gen.c"
 
 // op codes
@@ -18,7 +18,7 @@ enum {
 
 int str2i(const char *str, char split, char **endptr)
 {
-    int ret = 0;
+    int ret;
     ret = strtol(str, endptr, 10);
     if (*endptr != NULL) {
         if (**endptr == split) {
@@ -48,6 +48,8 @@ int main(int argc, char **argv) {
         printf("Usage: ./main + probability(e.g. 00100)\n");
         exit(1);
     }
+    // time
+    clock_t start_t, end_t;
     // registers
     u_int32_t ip;
     int32_t a, l;
@@ -64,9 +66,10 @@ int main(int argc, char **argv) {
         prob[i] = str2i(p_shift, '-', &end);
         p_shift = end;
     }
-
+    start_t = clock();
     init(buf, size, prob, seed, &a, &l);
+    end_t = clock();
     a = interpreter(buf, size, a, l);
-    printf("value of a in the end: %d\n", a);
+    printf("%d instructions distributed in %s took %lu cpu clocks\n", size, argv[1], (end_t - start_t));
     return 0;
 }
