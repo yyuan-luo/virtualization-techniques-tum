@@ -64,147 +64,31 @@ int threaded_interpreter(char *buf, int size, int a, int l)
 
 int indirect_threaded_interpreter(char *buf, int size, int a, int l)
 {
-    for (int i = 0; i < size; ++i)
+    static void *dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_BACK7};
+#define DISPATCH() goto *dispatch_table[buf[pc++]]
+
+    int pc = 0;
+    while (1)
     {
-        switch (buf[i])
-        {
-        case HALT:
-            return a;
-        case CLRA:
-            a = 0;
-            if (buf[i + 1] == HALT)
-                return a;
-            switch (buf[i + 1])
-            {
-            case INC3A:
-                a = 3;
-                break;
-            case DECA:
-                a = -1;
-                break;
-            case SELA:
-                l = a;
-                break;
-            case BACK7:
-                l--;
-                if (l > 0)
-                    i -= 7;
-                break;
-            default:
-                break;
-            }
-            i++;
-            break;
-        case INC3A:
-            a += 3;
-            if (buf[i + 1] == HALT)
-                return a;
-            switch (buf[i + 1])
-            {
-            case CLRA:
-                a = 0;
-                break;
-            case INC3A:
-                a += 3;
-                break;
-            case DECA:
-                a--;
-                break;
-            case SELA:
-                l = a;
-                break;
-            case BACK7:
-                l--;
-                if (l > 0)
-                    i -= 7;
-                break;
-            default:
-                break;
-            }
-            i++;
-            break;
-        case DECA:
-            a--;
-            if (buf[i + 1] == HALT)
-                return a;
-            switch (buf[i + 1])
-            {
-            case CLRA:
-                a = 0;
-                break;
-            case INC3A:
-                a += 3;
-                break;
-            case DECA:
-                a--;
-                break;
-            case SELA:
-                l = a;
-                break;
-            case BACK7:
-                l--;
-                if (l > 0)
-                    i -= 7;
-                break;
-            default:
-                break;
-            }
-            i++;
-            break;
-        case SELA:
-            l = a;
-            if (buf[i + 1] == HALT)
-                return a;
-            switch (buf[i + 1])
-            {
-            case CLRA:
-                a = 0;
-                break;
-            case INC3A:
-                a += 3;
-                break;
-            case DECA:
-                a--;
-                break;
-            case SELA:
-                l = a;
-                break;
-            case BACK7:
-                l--;
-                if (l > 0)
-                    i -= 7;
-                break;
-            default:
-                break;
-            }
-            i++;
-            break;
-        case BACK7:
-            l--;
-            if (l > 0)
-                i -= 7;
-            if (buf[i + 1] == HALT)
-                return a;
-            switch (buf[i + 1])
-            {
-            case CLRA:
-                a = 0;
-                break;
-            case INC3A:
-                a += 3;
-                break;
-            case DECA:
-                a--;
-                break;
-            case SELA:
-                l = a;
-                break;
-            default:
-                break;
-            }
-            i++;
-            break;
-        }
+    DO_HALT:
+        return a;
+    DO_CLRA:
+        a = 0;
+        DISPATCH();
+    DO_INC3A:
+        a += 3;
+        DISPATCH();
+    DO_DECA:
+        a--;
+        DISPATCH();
+    DO_SELA:
+        l = a;
+        DISPATCH();
+    DO_BACK7:
+        l--;
+        if (l > 0)
+            pc -= 7;
+        DISPATCH();
     }
     return a;
 }
