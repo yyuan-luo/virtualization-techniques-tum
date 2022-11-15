@@ -69,7 +69,7 @@ int indirect_threaded_interpreter(char *instructions, int a, int l)
 #define DISPATCH() goto *dispatch_table[instructions[pc++]]
 
     int pc = 0;
-    
+
     // fire
     DISPATCH();
     while (1)
@@ -96,6 +96,68 @@ int indirect_threaded_interpreter(char *instructions, int a, int l)
     }
 }
 
+int direct_threaded_interpreter(char *instructions, int size, int a, int l)
+{
+    static void* dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_SELA, &&DO_BACK7};
+
+#define DISPATCH_D() goto *(void *)intermediate_instructions[pc++]
+    // precoding
+    int64_t *intermediate_instructions = malloc(sizeof(int64_t) * size);
+    for (int i = 0; i < size; i++)
+    {
+        switch (instructions[i])
+        {
+        case HALT:
+            intermediate_instructions[i] = (int64_t) dispatch_table[HALT];
+            break;
+        case CLRA:
+            intermediate_instructions[i] = (int64_t) dispatch_table[CLRA];
+            break;
+        case INC3A:
+            intermediate_instructions[i] = (int64_t) dispatch_table[INC3A];
+            break;
+        case DECA:
+            intermediate_instructions[i] = (int64_t) dispatch_table[DECA];
+            break;
+        case SELA:
+            intermediate_instructions[i] = (int64_t) dispatch_table[SELA];
+            break;
+        case BACK7:
+            intermediate_instructions[i] = (int64_t) dispatch_table[BACK7];
+            break;
+        default:
+            break;
+        }
+    }
+
+    int pc = 0;
+
+    // fire
+    DISPATCH_D();
+    while (1)
+    {
+    DO_HALT:
+        return a;
+    DO_CLRA:
+        a = 0;
+        DISPATCH_D();
+    DO_INC3A:
+        a += 3;
+        DISPATCH_D();
+    DO_DECA:
+        a--;
+        DISPATCH_D();
+    DO_SELA:
+        l = a;
+        DISPATCH_D();
+    DO_BACK7:
+        l--;
+        if (l > 0)
+            pc -= 7;
+        DISPATCH_D();
+    }
+}
+
 int main(int argc, char **argv)
 {
     // time
@@ -107,13 +169,15 @@ int main(int argc, char **argv)
     int size = 50000, iteration = 5;
     char *p_shift = "1-9-1-5-5";
 
-    if (argc == 4) {
+    if (argc == 4)
+    {
         size = atoi(argv[1]);
         iteration = atoi(argv[2]);
         p_shift = argv[3];
         printf("Program continues with %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
     }
-    else {
+    else
+    {
         printf("Usage: ./main size iteration probability\n");
         printf("Program continues with default set: %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
     }
@@ -134,7 +198,6 @@ int main(int argc, char **argv)
     int a_init = a, l_init = l;
 
     // run different interpreters
-    printf("\nInitial values of a and l are %d and %d\n\n", a_init, l_init);
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
@@ -154,7 +217,16 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    
+    printf("/*---------------------------------------------------------------*/\n");
+    for (int i = 0; i < iteration; i++)
+    {
+        start_t = clock();
+        a = direct_threaded_interpreter(instructions, size, a, l);
+        end_t = clock();
+        printf("direct threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        a = a_init;
+        l = l_init;
+    }
 
     return 0;
 }
