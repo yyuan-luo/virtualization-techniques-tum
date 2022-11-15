@@ -62,12 +62,15 @@ int threaded_interpreter(char *instructions, int size, int a, int l)
     return a;
 }
 
-int indirect_threaded_interpreter(char *instructions, int size, int a, int l)
+int indirect_threaded_interpreter(char *instructions, int a, int l)
 {
-    static void *dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_BACK7};
+    static void *dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_SELA, &&DO_BACK7};
 #define DISPATCH() goto *dispatch_table[instructions[pc++]]
 
     int pc = 0;
+    
+    // fire
+    DISPATCH();
     while (1)
     {
     DO_HALT:
@@ -90,31 +93,36 @@ int indirect_threaded_interpreter(char *instructions, int size, int a, int l)
             pc -= 7;
         DISPATCH();
     }
-    return a;
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
-    {
-        printf("Usage: ./main + iteration + probability(e.g. ./main 5 0-1-0-0-0)\n");
-        exit(1);
-    }
     // time
     clock_t start_t, end_t;
     // registers
     u_int32_t ip;
     int32_t a, l;
 
-    int size = 50000;
+    int size = 50000, iteration = 5;
+    char *p_shift = "1-9-1-5-5";
+
+    if (argc == 4) {
+        size = atoi(argv[1]);
+        iteration = atoi(argv[2]);
+        p_shift = argv[3];
+        printf("Program continues with %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
+    }
+    else {
+        printf("Usage: ./main size iteration probability\n");
+        printf("Program continues with default set: %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
+    }
+
     char *instructions = (char *)malloc(sizeof(char) * size);
     int seed = 1;
     int prob[5];
-    char *end = NULL;
-    char *p_shift = argv[2];
-    int iteration = atoi(argv[1]);
 
     // decode command line parameters
+    char *end = NULL;
     for (int i = 0; i < 5; i++)
     {
         prob[i] = str2i(p_shift, '-', &end);
@@ -122,23 +130,28 @@ int main(int argc, char **argv)
     }
     // init instructions
     init(instructions, size, prob, seed, &a, &l);
+    int a_init = a, l_init = l;
 
+    // run different interpreters
+    printf("\nInitial values of a and l are %d and %d\n\n", a_init, l_init);
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
         a = threaded_interpreter(instructions, size, a, l);
         end_t = clock();
-        printf("threaded: %d instructions distributed in %s took %lu cpu clocks, final value of a: %d\n", size, argv[1], (end_t - start_t), a);
-        a = l = 0;
+        printf("threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        a = a_init;
+        l = l_init;
     }
-    printf("/*----------------------------------------------------------------------------------------------*/\n");
+    printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
-        a = indirect_threaded_interpreter(instructions, size, a, l);
+        a = indirect_threaded_interpreter(instructions, a, l);
         end_t = clock();
-        printf("indirect threaded: %d instructions distributed in %s took %lu cpu clocks, final value of a: %d\n", size, argv[1], (end_t - start_t), a);
-        a = l = 0;
+        printf("indirect threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        a = a_init;
+        l = l_init;
     }
     
 
