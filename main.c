@@ -32,7 +32,7 @@ int str2i(const char *str, char split, char **endptr)
     return ret;
 }
 
-int threaded_interpreter(char *instructions, int size, int a, int l)
+int switch_interpreter(char *instructions, int size, int a, int l)
 {
     for (int i = 0; i < size; ++i)
     {
@@ -137,9 +137,9 @@ int main(int argc, char **argv)
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
-        a = threaded_interpreter(instructions, size, a, l);
+        a = switch_interpreter(instructions, size, a, l);
         end_t = clock();
-        printf("threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        printf("switch interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
         a = a_init;
         l = l_init;
     }
