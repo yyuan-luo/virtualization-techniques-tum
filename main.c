@@ -98,7 +98,7 @@ int indirect_threaded_interpreter(char *instructions, int a, int l)
 
 int direct_threaded_interpreter(char *instructions, int size, int a, int l)
 {
-    static void* dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_SELA, &&DO_BACK7};
+    static void *dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_SELA, &&DO_BACK7};
 
 #define DISPATCH_D() goto *(void *)intermediate_instructions[pc++]
     // precoding
@@ -108,22 +108,22 @@ int direct_threaded_interpreter(char *instructions, int size, int a, int l)
         switch (instructions[i])
         {
         case HALT:
-            intermediate_instructions[i] = (int64_t) dispatch_table[HALT];
+            intermediate_instructions[i] = (int64_t)dispatch_table[HALT];
             break;
         case CLRA:
-            intermediate_instructions[i] = (int64_t) dispatch_table[CLRA];
+            intermediate_instructions[i] = (int64_t)dispatch_table[CLRA];
             break;
         case INC3A:
-            intermediate_instructions[i] = (int64_t) dispatch_table[INC3A];
+            intermediate_instructions[i] = (int64_t)dispatch_table[INC3A];
             break;
         case DECA:
-            intermediate_instructions[i] = (int64_t) dispatch_table[DECA];
+            intermediate_instructions[i] = (int64_t)dispatch_table[DECA];
             break;
         case SELA:
-            intermediate_instructions[i] = (int64_t) dispatch_table[SELA];
+            intermediate_instructions[i] = (int64_t)dispatch_table[SELA];
             break;
         case BACK7:
-            intermediate_instructions[i] = (int64_t) dispatch_table[BACK7];
+            intermediate_instructions[i] = (int64_t)dispatch_table[BACK7];
             break;
         default:
             break;
@@ -155,6 +155,123 @@ int direct_threaded_interpreter(char *instructions, int size, int a, int l)
         if (l > 0)
             pc -= 7;
         DISPATCH_D();
+    }
+}
+
+int superevent_interpreter(char *instructions, int a, int l)
+{
+    int pc = 0;
+    while (1)
+    {
+        if (instructions[pc] == HALT)
+            return a;
+        else if (instructions[pc] == BACK7)
+        {
+            l--;
+            if (l > 0)
+                pc -= 7;
+            pc++;
+        }
+        else
+        {
+            if ((instructions[pc] == CLRA || instructions[pc] == INC3A || instructions[pc] == DECA) && instructions[pc + 1] == CLRA)
+                a = 0;
+            else if (instructions[pc] == SELA)
+            {
+                l = a;
+                switch (instructions[pc + 1])
+                {
+                case HALT:
+                    return a;
+                case CLRA:
+                    a = 0;
+                    break;
+                case INC3A:
+                    a += 3;
+                    break;
+                case DECA:
+                    a--;
+                    break;
+                case SELA:
+                    l = a;
+                    break;
+                case BACK7:
+                    l--;
+                    if (l > 0)
+                        pc -= 6;
+                    break;
+                }
+            }
+            else if (instructions[pc] == CLRA)
+            {
+                switch (instructions[pc + 1])
+                {
+                case HALT:
+                    return 0;
+                case INC3A:
+                    a = 3;
+                    break;
+                case DECA:
+                    a = -1;
+                    break;
+                case SELA:
+                    l = a = 0;
+                    break;
+                case BACK7:
+                    l--;
+                    if (l > 0)
+                        pc -= 6;
+                    break;
+                }
+            }
+            else if (instructions[pc] == INC3A)
+            {
+                switch (instructions[pc + 1])
+                {
+                case HALT:
+                    return a + 3;
+                case INC3A:
+                    a += 6;
+                    break;
+                case DECA:
+                    a += 2;
+                    break;
+                case SELA:
+                    a += 3;
+                    l = a;
+                    break;
+                case BACK7:
+                    l--;
+                    if (l > 0)
+                        pc -= 6;
+                    break;
+                }
+            }
+            else if (instructions[pc] == DECA)
+            {
+                switch (instructions[pc + 1])
+                {
+                case HALT:
+                    return a - 1;
+                case INC3A:
+                    a += 2;
+                    break;
+                case DECA:
+                    a -= 2;
+                    break;
+                case SELA:
+                    a--;
+                    l = a;
+                    break;
+                case BACK7:
+                    l--;
+                    if (l > 0)
+                        pc -= 6;
+                    break;
+                }
+            }
+            pc += 2;
+        }
     }
 }
 
@@ -224,6 +341,16 @@ int main(int argc, char **argv)
         a = direct_threaded_interpreter(instructions, size, a, l);
         end_t = clock();
         printf("direct threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        a = a_init;
+        l = l_init;
+    }
+    printf("/*---------------------------------------------------------------*/\n");
+    for (int i = 0; i < iteration; i++)
+    {
+        start_t = clock();
+        a = superevent_interpreter(instructions, a, l);
+        end_t = clock();
+        printf("super event interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
         a = a_init;
         l = l_init;
     }
