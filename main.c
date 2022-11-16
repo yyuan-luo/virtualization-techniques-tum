@@ -174,12 +174,12 @@ int main(int argc, char **argv)
         size = atoi(argv[1]);
         iteration = atoi(argv[2]);
         p_shift = argv[3];
-        printf("Program continues with %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
+        printf("\nProgram continues with %d instruction(s) distributed in %s, each interpreter will run %d times\n\n", size, p_shift, iteration);
     }
     else
     {
-        printf("Usage: ./main size iteration probability\n");
-        printf("Program continues with default set: %d instruction(s) distributed in %s, each interpreter will run %d times\n", size, p_shift, iteration);
+        printf("\nUsage: ./main size iteration probability\n");
+        printf("Program continues with default set: %d instruction(s) distributed in %s, each interpreter will run %d times\n\n", size, p_shift, iteration);
     }
 
     char *instructions = (char *)malloc(sizeof(char) * size);
