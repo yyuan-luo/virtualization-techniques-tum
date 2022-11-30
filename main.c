@@ -103,31 +103,12 @@ int direct_threaded_interpreter(char *instructions, int size, int a, int l)
 #define DISPATCH_D() goto *(void *)intermediate_instructions[pc++]
     // precoding
     int64_t *intermediate_instructions = malloc(sizeof(int64_t) * size);
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i += 4)
     {
-        switch (instructions[i])
-        {
-        case HALT:
-            intermediate_instructions[i] = (int64_t)dispatch_table[HALT];
-            break;
-        case CLRA:
-            intermediate_instructions[i] = (int64_t)dispatch_table[CLRA];
-            break;
-        case INC3A:
-            intermediate_instructions[i] = (int64_t)dispatch_table[INC3A];
-            break;
-        case DECA:
-            intermediate_instructions[i] = (int64_t)dispatch_table[DECA];
-            break;
-        case SELA:
-            intermediate_instructions[i] = (int64_t)dispatch_table[SELA];
-            break;
-        case BACK7:
-            intermediate_instructions[i] = (int64_t)dispatch_table[BACK7];
-            break;
-        default:
-            break;
-        }
+        intermediate_instructions[i] = (int64_t)dispatch_table[instructions[i]];
+        intermediate_instructions[i+1] = (int64_t)dispatch_table[instructions[i+1]];
+        intermediate_instructions[i+2] = (int64_t)dispatch_table[instructions[i+2]];
+        intermediate_instructions[i+3] = (int64_t)dispatch_table[instructions[i+3]];
     }
 
     int pc = 0;
