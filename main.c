@@ -256,6 +256,15 @@ int superevent_interpreter(char *instructions, int a, int l)
     }
 }
 
+int cal_average(int *cycles, int size) {
+    int sum = 0;
+    for (int i = 0; i < size; i++)
+    {
+        sum += cycles[i];
+    }
+    return sum / size;
+}
+
 int main(int argc, char **argv)
 {
     // time
@@ -280,6 +289,7 @@ int main(int argc, char **argv)
         printf("Program continues with default set: %d instruction(s) distributed in %s, each interpreter will run %d times\n\n", size, p_shift, iteration);
     }
 
+    int *cycles = (int *)malloc(sizeof(int) * iteration);
     char *instructions = (char *)malloc(sizeof(char) * size);
     int seed = 1;
     int prob[5];
@@ -301,40 +311,48 @@ int main(int argc, char **argv)
         start_t = clock();
         a = switch_interpreter(instructions, a, l);
         end_t = clock();
-        printf("switch interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        cycles[i] = (end_t - start_t);
+        printf("switch interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
         l = l_init;
     }
+    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
         a = indirect_threaded_interpreter(instructions, a, l);
         end_t = clock();
-        printf("indirect threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        cycles[i] = (end_t - start_t);
+        printf("indirect threaded interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
         l = l_init;
     }
+    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
         a = direct_threaded_interpreter(instructions, size, a, l);
         end_t = clock();
-        printf("direct threaded interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        cycles[i] = (end_t - start_t);
+        printf("direct threaded interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
         l = l_init;
     }
+    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
         start_t = clock();
         a = superevent_interpreter(instructions, a, l);
         end_t = clock();
-        printf("super event interpreter took %lu cpu clocks, final value of a: %d\n", (end_t - start_t), a);
+        cycles[i] = (end_t - start_t);
+        printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
         a = a_init;
         l = l_init;
     }
+    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
     return 0;
 }
