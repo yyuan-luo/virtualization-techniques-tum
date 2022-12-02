@@ -3,7 +3,11 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <string.h>
 #include <time.h>
+#include <sys/mman.h>
 #include "gen.c"
 
 // op codes
@@ -16,6 +20,52 @@ enum
     SELA,
     BACK7
 };
+
+void put_head(FILE* stream, uint8_t a_init) {
+    fputc(0x55, stream);
+    fputc(0x48, stream);
+    fputc(0x89, stream);
+    fputc(0xe5, stream);
+    fputc(0xc7, stream);
+    fputc(0x45, stream);
+    fputc(0xfc, stream);
+    fputc(a_init, stream);
+    fputc(0x00, stream);
+    fputc(0x00, stream);
+    fputc(0x00, stream);
+}
+
+void put_CLRA(FILE* stream) {
+    fputc(0xc7, stream);
+    fputc(0x45, stream);
+    fputc(0xfc, stream);
+    fputc(0x00, stream);
+    fputc(0x00, stream);
+    fputc(0x00, stream);
+    fputc(0x00, stream);
+}
+
+void put_INC3A(FILE* stream) {
+    fputc(0x83, stream);
+    fputc(0x45, stream);
+    fputc(0xfc, stream);
+    fputc(0x03, stream);
+}
+
+void put_DECA(FILE* stream) {
+    fputc(0x83, stream);
+    fputc(0x6d, stream);
+    fputc(0xfc, stream);
+    fputc(0x01, stream);
+}
+
+void put_tail(FILE* stream) {
+    fputc(0x8b, stream);
+    fputc(0x45, stream);
+    fputc(0xfc, stream);
+    fputc(0x5d, stream);
+    fputc(0xc3, stream);
+}
 
 int str2i(const char *str, char split, char **endptr)
 {
@@ -256,6 +306,28 @@ int superevent_interpreter(char *instructions, int a, int l)
     }
 }
 
+void gen_x86stream(char *instructions, int size, FILE* stream, uint8_t a_init) {
+    fflush(stream);
+    put_head(stream, a_init);
+    for (int i = 0; i < size - 1; ++i)
+    {
+        switch (instructions[i]) 
+        {
+            case CLRA:
+                put_CLRA(stream);
+                break;
+            case INC3A:
+                put_INC3A(stream);
+                break;
+            case DECA:
+                put_DECA(stream);
+                break;
+        }
+    }
+    put_tail(stream);
+    fclose(stream);
+}
+
 int cal_average(int *cycles, int size) {
     int sum = 0;
     for (int i = 0; i < size; i++)
@@ -354,5 +426,40 @@ int main(int argc, char **argv)
     }
     printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
+    printf("/*---------------------------------------------------------------*/\n");
+    
+    char * buf;
+    size_t len;
+    FILE* stream = open_memstream(&buf, &len);
+    if (stream == NULL)
+        printf("fmmemopen failed\n");
+    /* generate x86 instruction stream */
+    gen_x86stream(instructions, size, stream, a_init);
+    /* mmap a region for our code */
+    void *p = mmap(NULL, len, PROT_READ|PROT_WRITE,  /* No PROT_EXEC */
+            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); 
+    if (p==MAP_FAILED) {
+        fprintf(stderr, "mmap() failed\n");
+        return 2;
+    }
+    memcpy(p, buf, len);
+
+    /* Now make it execute-only */
+    if (mprotect(p, len, PROT_EXEC) < 0) {
+        fprintf(stderr, "mprotect failed to mark exec-only\n");
+        return 2;
+    } 
+
+    int (*func)(void) = p;
+    for (int i = 0; i < iteration; i++)
+    {
+        start_t = clock();
+        a = func();
+        end_t = clock();
+        cycles[i] = (end_t - start_t);
+        printf("x86 stream took %d cpu clocks, final value of a: %d\n", cycles[i], a);
+    }
+    free(buf);
+    printf("On average, x86 stream took %d cpu clocks\n", cal_average(cycles, iteration));
     return 0;
 }
