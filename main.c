@@ -328,7 +328,7 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, indirect threaded interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
@@ -340,7 +340,7 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, direct threaded interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
     return 0;
 }
