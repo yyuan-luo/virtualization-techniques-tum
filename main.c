@@ -432,7 +432,7 @@ int main(int argc, char **argv)
     size_t len;
     FILE* stream = open_memstream(&buf, &len);
     if (stream == NULL)
-        printf("fmmemopen failed\n");
+        printf("open_memstream failed\n");
     /* generate x86 instruction stream */
     gen_x86stream(instructions, size, stream, a_init);
     /* mmap a region for our code */
