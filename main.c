@@ -10,6 +10,9 @@
 #include <sys/mman.h>
 #include "gen.c"
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+
 // op codes
 enum
 {
@@ -388,7 +391,7 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, switch interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, switch interpreter took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
@@ -400,7 +403,7 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, indirect threaded interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, indirect threaded interpreter took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
@@ -412,19 +415,19 @@ int main(int argc, char **argv)
         a = a_init;
         l = l_init;
     }
-    printf("On average, direct threaded interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, direct threaded interpreter took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
     printf("/*---------------------------------------------------------------*/\n");
-    for (int i = 0; i < iteration; i++)
-    {
-        start_t = clock();
-        a = superevent_interpreter(instructions, a, l);
-        end_t = clock();
-        cycles[i] = (end_t - start_t);
-        printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
-        a = a_init;
-        l = l_init;
-    }
-    printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    // for (int i = 0; i < iteration; i++)
+    // {
+    //     start_t = clock();
+    //     a = superevent_interpreter(instructions, a, l);
+    //     end_t = clock();
+    //     cycles[i] = (end_t - start_t);
+    //     printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
+    //     a = a_init;
+    //     l = l_init;
+    // }
+    // printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
     printf("/*---------------------------------------------------------------*/\n");
     
@@ -460,6 +463,6 @@ int main(int argc, char **argv)
         printf("x86 stream took %d cpu clocks, final value of a: %d\n", cycles[i], a);
     }
     free(buf);
-    printf("On average, x86 stream took %d cpu clocks\n", cal_average(cycles, iteration));
+    printf("On average, x86 stream took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
     return 0;
 }
