@@ -417,17 +417,17 @@ int main(int argc, char **argv)
     }
     printf("On average, direct threaded interpreter took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
     printf("/*---------------------------------------------------------------*/\n");
-    // for (int i = 0; i < iteration; i++)
-    // {
-    //     start_t = clock();
-    //     a = superevent_interpreter(instructions, a, l);
-    //     end_t = clock();
-    //     cycles[i] = (end_t - start_t);
-    //     printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
-    //     a = a_init;
-    //     l = l_init;
-    // }
-    // printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+    for (int i = 0; i < iteration; i++)
+    {
+        start_t = clock();
+        a = superevent_interpreter(instructions, a, l);
+        end_t = clock();
+        cycles[i] = (end_t - start_t);
+        printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
+        a = a_init;
+        l = l_init;
+    }
+    printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
     printf("/*---------------------------------------------------------------*/\n");
     
