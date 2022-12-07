@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 #include <sys/mman.h>
 #include "gen.c"
 
@@ -23,6 +22,12 @@ enum
     SELA,
     BACK7
 };
+
+uint64_t rdtsc(){
+    unsigned int lo,hi;
+    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+    return ((uint64_t)hi << 32) | lo;
+}
 
 void put_head(FILE* stream, uint8_t a_init) {
     fputc(0x55, stream);
@@ -331,6 +336,29 @@ void gen_x86stream(char *instructions, int size, FILE* stream, uint8_t a_init) {
     fclose(stream);
 }
 
+void indirect_x86gen(char *instructions, FILE* stream, uint8_t a_init) {
+    static void *dispatch_table[] = {&&x86_HALT, &&x86_CLRA, &&x86_INC3A, &&x86_DECA};
+#define x86_DISPATCH() goto *dispatch_table[instructions[pc++]]
+    int pc = 0;
+    put_head(stream, a_init);
+    x86_DISPATCH();
+    while (1) {
+        x86_HALT:
+            put_tail(stream);
+            break;
+        x86_CLRA:
+            put_CLRA(stream);
+            x86_DISPATCH();
+        x86_INC3A:
+            put_INC3A(stream);
+            x86_DISPATCH();
+        x86_DECA:
+            put_DECA(stream);
+            x86_DISPATCH();
+    }
+    fclose(stream);
+}
+
 int cal_average(int *cycles, int size) {
     int sum = 0;
     for (int i = 0; i < size; i++)
@@ -383,9 +411,9 @@ int main(int argc, char **argv)
     // run different interpreters
     for (int i = 0; i < iteration; i++)
     {
-        start_t = clock();
+        start_t = rdtsc();
         a = switch_interpreter(instructions, a, l);
-        end_t = clock();
+        end_t = rdtsc();
         cycles[i] = (end_t - start_t);
         printf("switch interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
@@ -395,9 +423,9 @@ int main(int argc, char **argv)
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
-        start_t = clock();
+        start_t = rdtsc();
         a = indirect_threaded_interpreter(instructions, a, l);
-        end_t = clock();
+        end_t = rdtsc();
         cycles[i] = (end_t - start_t);
         printf("indirect threaded interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
@@ -407,27 +435,29 @@ int main(int argc, char **argv)
     printf("/*---------------------------------------------------------------*/\n");
     for (int i = 0; i < iteration; i++)
     {
-        start_t = clock();
+        start_t = rdtsc();
         a = direct_threaded_interpreter(instructions, size, a, l);
-        end_t = clock();
+        end_t = rdtsc();
         cycles[i] = (end_t - start_t);
         printf("direct threaded interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
         a = a_init;
         l = l_init;
     }
     printf("On average, direct threaded interpreter took %s%d%s cpu clocks\n", KRED, cal_average(cycles, iteration), KNRM);
-    printf("/*---------------------------------------------------------------*/\n");
-    for (int i = 0; i < iteration; i++)
-    {
-        start_t = clock();
-        a = superevent_interpreter(instructions, a, l);
-        end_t = clock();
-        cycles[i] = (end_t - start_t);
-        printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
-        a = a_init;
-        l = l_init;
-    }
-    printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
+
+    // Bad implementation of super-event interpreter
+    // printf("/*---------------------------------------------------------------*/\n");
+    // for (int i = 0; i < iteration; i++)
+    // {
+    //     start_t = clock();
+    //     a = superevent_interpreter(instructions, a, l);
+    //     end_t = clock();
+    //     cycles[i] = (end_t - start_t);
+    //     printf("super event interpreter took %d cpu clocks, final value of a: %d\n",cycles[i], a);
+    //     a = a_init;
+    //     l = l_init;
+    // }
+    // printf("On average, super event interpreter took %d cpu clocks\n", cal_average(cycles, iteration));
 
     printf("/*---------------------------------------------------------------*/\n");
     
@@ -456,9 +486,9 @@ int main(int argc, char **argv)
     int (*func)(void) = p;
     for (int i = 0; i < iteration; i++)
     {
-        start_t = clock();
+        start_t = rdtsc();
         a = func();
-        end_t = clock();
+        end_t = rdtsc();
         cycles[i] = (end_t - start_t);
         printf("x86 stream took %d cpu clocks, final value of a: %d\n", cycles[i], a);
     }
