@@ -154,7 +154,7 @@ int indirect_threaded_interpreter(char *instructions, int a, int l)
     }
 }
 
-int direct_threaded_interpreter(char *instructions, int size, int a, int l)
+int indirect_threaded_interpreter_precoding(char *instructions, int size, int a, int l)
 {
     static void *dispatch_table[] = {&&DO_HALT, &&DO_CLRA, &&DO_INC3A, &&DO_DECA, &&DO_SELA, &&DO_BACK7};
 
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < iteration; i++)
     {
         start_t = rdtsc();
-        a = direct_threaded_interpreter(instructions, size, a, l);
+        a = indirect_threaded_interpreter_precoding(instructions, size, a, l);
         end_t = rdtsc();
         cycles[i] = (end_t - start_t);
         printf("direct threaded interpreter took %d cpu clocks, final value of a: %d\n", cycles[i], a);
